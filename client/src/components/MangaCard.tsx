@@ -48,6 +48,8 @@ function getChapterReaderUrl(chapterUrl: string) {
   } catch {}
   return chapterUrl;
 }
+
+function getMangaHref(url: string) {
   try {
     const u = new URL(url, 'https://hentaicop.com');
     if (u.pathname.startsWith('/manga/')) {
