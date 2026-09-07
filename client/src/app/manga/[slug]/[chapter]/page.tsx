@@ -4,6 +4,8 @@ import Link from 'next/link';
 import { ChevronLeft, ChevronRight, BookOpen } from 'lucide-react';
 import { buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+export const dynamic = 'force-dynamic';
+export const maxDuration = 30;
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || '/api';
 

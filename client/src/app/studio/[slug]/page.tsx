@@ -19,6 +19,8 @@ import type { ReactNode } from 'react';
 import { buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { ChevronLeft, ChevronRight, AlertTriangle, SearchX } from 'lucide-react';
+export const dynamic = 'force-dynamic';
+export const maxDuration = 30;
 
 export default async function StudioSlugPage({
   params,

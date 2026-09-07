@@ -5,6 +5,8 @@ import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 import { ChevronLeft, ChevronRight, Search, SearchX } from 'lucide-react';
+export const dynamic = 'force-dynamic';
+export const maxDuration = 30;
 
 export async function generateMetadata({
   searchParams,

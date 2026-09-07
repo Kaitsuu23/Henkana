@@ -3,8 +3,11 @@ import { Button, buttonVariants } from '@/components/ui/button';
 import Link from 'next/link';
 import { ChevronLeft, ChevronRight, Download } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { HlsPlayer } from '@/components/HlsPlayer';
+import { WatchPlayer } from '@/components/WatchPlayer';
 import type { Metadata } from 'next';
+
+export const dynamic = 'force-dynamic';
+export const maxDuration = 30;
 
 export async function generateMetadata({
   params,
@@ -12,32 +15,30 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const url = `https://hentaicop.com/${slug}/`;
   try {
-    const data = await getWatch(url);
-    const title = data?.data?.title || slug.replace(/-/g, ' ');
-    return { title };
+    const data = await getWatch(`https://hentaicop.com/${slug}/`);
+    return { title: data?.title || slug.replace(/-/g, ' ') };
   } catch {
     return { title: slug.replace(/-/g, ' ') };
   }
 }
 
 export default async function WatchPage({
-  params
+  params,
 }: {
-  params: Promise<{ slug: string }>
+  params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const url = `https://hentaicop.com/${slug}/`;
+  const episodeUrl = `https://hentaicop.com/${slug}/`;
 
-  let watchData;
+  let watchData: any = null;
   try {
-    watchData = await getWatch(url);
+    watchData = await getWatch(episodeUrl);
   } catch {
     watchData = null;
   }
 
-  if (!watchData?.success) {
+  if (!watchData?.title && !watchData?.servers) {
     return (
       <div className="py-20 text-center">
         <h2 className="text-xl font-bold text-destructive">Episode Not Found</h2>
@@ -46,13 +47,7 @@ export default async function WatchPage({
     );
   }
 
-  const { data } = watchData;
-
-  // streams[] dari response — semua quality yang berhasil di-extract
-  const sources = (data.streams || []).map((s: any) => ({
-    quality: s.quality,
-    hlsUrl : s.hlsUrl,
-  }));
+  const data = watchData;
 
   // Resolve prev/next
   function getNavUrl(navUrl: string | null) {
@@ -81,7 +76,6 @@ export default async function WatchPage({
       {/* Header */}
       <div className="flex flex-col gap-4 border-b border-border/50 pb-5 md:flex-row md:items-end md:justify-between">
         <div className="space-y-2">
-
           <div className="flex items-center gap-3">
             <div>
               <span className="block text-xs text-muted-foreground">Now playing</span>
@@ -91,29 +85,23 @@ export default async function WatchPage({
             </div>
           </div>
         </div>
-
-        {sources.length > 0 && (
-          <span className="inline-flex w-fit items-center rounded-full border border-border/60 bg-muted px-3 py-1 text-xs font-medium text-muted-foreground">
-            {sources.length} quality {sources.length === 1 ? 'option' : 'options'}
-          </span>
-        )}
       </div>
 
-      {/* Player */}
+      {/* Player — stream extraction happens client-side */}
       <div className="aspect-video w-full bg-black overflow-hidden border border-border shadow-2xl">
-        {sources.length > 0 ? (
-          <HlsPlayer sources={sources} title={data.title} prevUrl={prevUrl} nextUrl={nextUrl} />
-        ) : (
-          <div className="flex items-center justify-center w-full h-full text-muted-foreground text-sm">
-            Stream tidak tersedia
-          </div>
-        )}
+        <WatchPlayer
+          episodeUrl={episodeUrl}
+          servers={data.servers || []}
+          title={data.title}
+          prevUrl={prevUrl}
+          nextUrl={nextUrl}
+        />
       </div>
 
       {/* Navigasi */}
       <div className="flex items-center justify-between border-t border-b border-border/50 py-4">
         {prevUrl ? (
-          <Link href={prevUrl} className={buttonVariants({ variant: "outline" })}>
+          <Link href={prevUrl} className={buttonVariants({ variant: 'outline' })}>
             <ChevronLeft className="w-4 h-4 mr-2" /> Previous
           </Link>
         ) : (
@@ -122,12 +110,12 @@ export default async function WatchPage({
           </Button>
         )}
 
-        <Link href={seriesLink} className={buttonVariants({ variant: "default" })}>
+        <Link href={seriesLink} className={buttonVariants({ variant: 'default' })}>
           All Episodes
         </Link>
 
         {nextUrl ? (
-          <Link href={nextUrl} className={buttonVariants({ variant: "outline" })}>
+          <Link href={nextUrl} className={buttonVariants({ variant: 'outline' })}>
             Next <ChevronRight className="w-4 h-4 ml-2" />
           </Link>
         ) : (

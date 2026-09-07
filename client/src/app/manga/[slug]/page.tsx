@@ -6,6 +6,8 @@ import { RelatedManga } from '@/components/RelatedManga';
 import Link from 'next/link';
 import { buttonVariants } from '@/components/ui/button';
 import { BookOpen, Star, User } from 'lucide-react';
+export const dynamic = 'force-dynamic';
+export const maxDuration = 30;
 
 export const revalidate = 3600;
 

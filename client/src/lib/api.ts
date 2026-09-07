@@ -35,176 +35,131 @@ export async function fetchAPI(endpoint: string, options?: RequestInit) {
 }
 
 // ── Helpers ───────────────────────────────────────────────────
-// Wrap scraper result to match the { success: true, ...fields } shape
-// that pages expect (same as what API routes return via ok()).
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function wrap(data: any): any {
   if (data && typeof data === 'object' && 'success' in data) return data;
-  // Spread the object so callers access fields at top level: result.data, result.total, etc.
   return { success: true, ...data };
 }
 
-// ── Server-side direct imports (lazy, so bundler only pulls them in
-//    when this module runs on Node — not in the browser bundle) ──
-
+// ── Lazy scraper imports ──────────────────────────────────────
 /* eslint-disable @typescript-eslint/no-require-imports */
-const lazyScrapers = {
-  home           : () => require('./scrapers/homeParser'),
-  search         : () => require('./scrapers/searchParser'),
-  detail         : () => require('./scrapers/detailParser'),
-  sidebar        : () => require('./scrapers/sidebarParser'),
-  tooltip        : () => require('./scrapers/tooltipParser'),
-  manga          : () => require('./scrapers/mangaParser'),
-  manhwa         : () => require('./scrapers/manhwaParser'),
-  doujinshi      : () => require('./scrapers/doujinshiParser'),
-  listing        : () => require('./scrapers/listingParser'),
-  watch          : () => require('./scrapers/watchParser'),
-  player         : () => require('./scrapers/playerParser'),
-  series         : () => require('./scrapers/seriesParser'),
-  genre          : () => require('./scrapers/genreParser'),
-  studio         : () => require('./scrapers/studioParser'),
-  producer       : () => require('./scrapers/producerParser'),
-  listMode       : () => require('./scrapers/listModeParser'),
-  mangaDetail    : () => require('./scrapers/mangaDetailParser'),
-  mangaGenre     : () => require('./scrapers/mangaGenreParser'),
-  mangaRead      : () => require('./scrapers/mangaReadParser'),
+const s = {
+  home       : () => require('./scrapers/homeParser'),
+  search     : () => require('./scrapers/searchParser'),
+  detail     : () => require('./scrapers/detailParser'),
+  sidebar    : () => require('./scrapers/sidebarParser'),
+  tooltip    : () => require('./scrapers/tooltipParser'),
+  manga      : () => require('./scrapers/mangaParser'),
+  manhwa     : () => require('./scrapers/manhwaParser'),
+  doujinshi  : () => require('./scrapers/doujinshiParser'),
+  listing    : () => require('./scrapers/listingParser'),
+  watch      : () => require('./scrapers/watchParser'),
+  series     : () => require('./scrapers/seriesParser'),
+  genre      : () => require('./scrapers/genreParser'),
+  studio     : () => require('./scrapers/studioParser'),
+  producer   : () => require('./scrapers/producerParser'),
+  listMode   : () => require('./scrapers/listModeParser'),
+  mangaDetail: () => require('./scrapers/mangaDetailParser'),
+  mangaGenre : () => require('./scrapers/mangaGenreParser'),
+  mangaRead  : () => require('./scrapers/mangaReadParser'),
 };
 /* eslint-enable @typescript-eslint/no-require-imports */
 
 // ── Public API ────────────────────────────────────────────────
 
 export async function getHome() {
-  const { scrapeHome } = lazyScrapers.home();
-  return wrap(await scrapeHome());
+  return wrap(await s.home().scrapeHome());
 }
 
 export async function getSearch(query: string, page = 1) {
-  const { scrapeSearch } = lazyScrapers.search();
-  return wrap(await scrapeSearch(query, page));
+  return wrap(await s.search().scrapeSearch(query, page));
 }
 
 export async function getDetail(url: string) {
-  const { scrapeDetail } = lazyScrapers.detail();
-  return wrap(await scrapeDetail(url));
+  return wrap(await s.detail().scrapeDetail(url));
 }
 
 export async function getSidebar() {
-  const { scrapeSidebar } = lazyScrapers.sidebar();
-  return wrap(await scrapeSidebar());
+  return wrap(await s.sidebar().scrapeSidebar());
 }
 
+// Basic watch info only — stream extraction happens client-side via /api/watch.
 export async function getWatch(url: string) {
-  const { scrapeWatch }            = lazyScrapers.watch();
-  const { extractStreamFromEmbed } = lazyScrapers.player();
-
-  const data = await scrapeWatch(url);
-
-  const streamResults = await Promise.allSettled(
-    (data.servers as { name: string; embedUrl: string }[]).map(async (s) => {
-      const stream = await extractStreamFromEmbed(s.embedUrl);
-      return { server: s.name, embedUrl: s.embedUrl, ...stream };
-    })
-  );
-
-  const streams = streamResults
-    .filter((r) => r.status === 'fulfilled')
-    .map((r) => (r as PromiseFulfilledResult<unknown>).value);
-
-  return wrap({ ...data, streams });
+  return wrap(await s.watch().scrapeWatch(url));
 }
 
 export async function getHentai(page = 1) {
-  const { scrapeListing } = lazyScrapers.listing();
-  return wrap(await scrapeListing('hentai', page));
+  return wrap(await s.listing().scrapeListing('hentai', page));
 }
 
 export async function get2D(page = 1) {
-  const { scrapeListing } = lazyScrapers.listing();
-  return wrap(await scrapeListing('2d', page));
+  return wrap(await s.listing().scrapeListing('2d', page));
 }
 
 export async function getJav(page = 1) {
-  const { scrapeListing } = lazyScrapers.listing();
-  return wrap(await scrapeListing('jav', page));
+  return wrap(await s.listing().scrapeListing('jav', page));
 }
 
 export async function getUncensored(page = 1) {
-  const { scrapeListing } = lazyScrapers.listing();
-  return wrap(await scrapeListing('uncensored', page));
+  return wrap(await s.listing().scrapeListing('uncensored', page));
 }
 
 export async function getManga(page = 1) {
-  const { scrapeManga } = lazyScrapers.manga();
-  return wrap(await scrapeManga(page));
+  return wrap(await s.manga().scrapeManga(page));
 }
 
 export async function getManhwa(page = 1) {
-  const { scrapeManhwa } = lazyScrapers.manhwa();
-  return wrap(await scrapeManhwa(page));
+  return wrap(await s.manhwa().scrapeManhwa(page));
 }
 
 export async function getDoujinshi(page = 1) {
-  const { scrapeDoujinshi } = lazyScrapers.doujinshi();
-  return wrap(await scrapeDoujinshi(page));
+  return wrap(await s.doujinshi().scrapeDoujinshi(page));
 }
 
 export async function getSeries(params: Record<string, string | number | string[]>) {
-  const { scrapeSeries } = lazyScrapers.series();
-  const p = params as Parameters<typeof scrapeSeries>[0];
-  return wrap(await scrapeSeries(p));
+  return wrap(await s.series().scrapeSeries(params));
 }
 
 export async function getSeriesFilters() {
-  const { scrapeSeriesFilters } = lazyScrapers.series();
-  return wrap(await scrapeSeriesFilters());
+  return wrap(await s.series().scrapeSeriesFilters());
 }
 
 export async function getListMode(title = '') {
-  const { scrapeListMode } = lazyScrapers.listMode();
-  return wrap(await scrapeListMode(title));
+  return wrap(await s.listMode().scrapeListMode(title));
 }
 
 export async function getGenres() {
-  const { scrapeGenreList } = lazyScrapers.genre();
-  return wrap(await scrapeGenreList());
+  return wrap(await s.genre().scrapeGenreList());
 }
 
 export async function getGenreSlug(slug: string, page = 1) {
-  const { scrapeGenreAnime } = lazyScrapers.genre();
-  return wrap(await scrapeGenreAnime(slug, page));
+  return wrap(await s.genre().scrapeGenreAnime(slug, page));
 }
 
 export async function getStudios() {
-  const { scrapeStudioList } = lazyScrapers.studio();
-  return wrap(await scrapeStudioList());
+  return wrap(await s.studio().scrapeStudioList());
 }
 
 export async function getStudioSlug(slug: string, page = 1) {
-  const { scrapeStudioAnime } = lazyScrapers.studio();
-  return wrap(await scrapeStudioAnime(slug, page));
+  return wrap(await s.studio().scrapeStudioAnime(slug, page));
 }
 
 export async function getProducers() {
-  const { scrapeProducerList } = lazyScrapers.producer();
-  return wrap(await scrapeProducerList());
+  return wrap(await s.producer().scrapeProducerList());
 }
 
 export async function getProducerSlug(slug: string, page = 1) {
-  const { scrapeProducerAnime } = lazyScrapers.producer();
-  return wrap(await scrapeProducerAnime(slug, page));
+  return wrap(await s.producer().scrapeProducerAnime(slug, page));
 }
 
 export async function getMangaDetail(url: string) {
-  const { scrapeMangaDetail } = lazyScrapers.mangaDetail();
-  return wrap(await scrapeMangaDetail(url));
+  return wrap(await s.mangaDetail().scrapeMangaDetail(url));
 }
 
 export async function getMangaGenreSlug(slug: string, page = 1) {
-  const { scrapeMangaGenre } = lazyScrapers.mangaGenre();
-  return wrap(await scrapeMangaGenre(slug, page));
+  return wrap(await s.mangaGenre().scrapeMangaGenre(slug, page));
 }
 
 export async function getMangaRead(url: string) {
-  const { scrapeMangaRead } = lazyScrapers.mangaRead();
-  return wrap(await scrapeMangaRead(url));
+  return wrap(await s.mangaRead().scrapeMangaRead(url));
 }

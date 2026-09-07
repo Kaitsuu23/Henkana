@@ -8,6 +8,8 @@ import Link from 'next/link';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight, List } from 'lucide-react';
 import { Suspense } from 'react';
+export const dynamic = 'force-dynamic';
+export const maxDuration = 30;
 
 export const revalidate = 300;
 

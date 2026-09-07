@@ -6,6 +6,8 @@ import { cn } from '@/lib/utils';
 import { ChevronLeft, ChevronRight, Tag, AlertTriangle, SearchX } from 'lucide-react';
 import { buttonVariants } from '@/components/ui/button';
 import { AnimeCard } from '@/components/AnimeCard';
+export const dynamic = 'force-dynamic';
+export const maxDuration = 30;
 
 export async function generateMetadata({
   params,
