@@ -1,5 +1,4 @@
 import type { Metadata } from 'next';
-import type { Metadata } from 'next';
 import { getMangaRead } from '@/lib/api';
 import Link from 'next/link';
 import { ChevronLeft, ChevronRight, BookOpen } from 'lucide-react';
