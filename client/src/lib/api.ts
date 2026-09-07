@@ -1,18 +1,20 @@
-// On the server (SSR / build), relative URLs aren't valid — resolve against
-// localhost. On the client, relative /api works fine.
-// NEXT_PUBLIC_API_URL overrides both (useful for external API or staging).
-function getApiBase(): string {
-  if (process.env.NEXT_PUBLIC_API_URL) return process.env.NEXT_PUBLIC_API_URL;
-  if (typeof window === 'undefined') {
-    // Server-side: use localhost with the port Next.js listens on.
-    const port = process.env.PORT || '3000';
-    return `http://localhost:${port}/api`;
-  }
-  return '/api';
-}
+// ─────────────────────────────────────────────────────────────
+//  api.ts — universal data-fetching layer
+//
+//  Server Components / API routes → call scrapers DIRECTLY
+//    (no HTTP hop, works on Vercel, faster, no VERCEL_URL needed)
+//
+//  Client Components (browser) → fetch /api/* via HTTP
+//    (can't import Node.js scrapers in the browser)
+// ─────────────────────────────────────────────────────────────
+
+// ── HTTP fallback used only in the browser ────────────────────
+const CLIENT_API_BASE =
+  process.env.NEXT_PUBLIC_API_URL ||
+  (typeof window !== 'undefined' ? '/api' : '');
 
 export async function fetchAPI(endpoint: string, options?: RequestInit) {
-  const url = `${getApiBase()}${endpoint}`;
+  const url = `${CLIENT_API_BASE}${endpoint}`;
   try {
     const res = await fetch(url, {
       ...options,
@@ -22,16 +24,9 @@ export async function fetchAPI(endpoint: string, options?: RequestInit) {
       },
       next: { revalidate: 60, ...options?.next },
     });
-    
-    if (!res.ok) {
-      throw new Error(`API error: ${res.status} ${res.statusText}`);
-    }
-    
+    if (!res.ok) throw new Error(`API error: ${res.status} ${res.statusText}`);
     const data = await res.json();
-    if (!data.success) {
-      throw new Error(data.error?.message || 'Unknown API error');
-    }
-    
+    if (!data.success) throw new Error(data.error?.message || 'Unknown API error');
     return data;
   } catch (error) {
     console.error(`Fetch API Error [${endpoint}]:`, error);
@@ -39,108 +34,177 @@ export async function fetchAPI(endpoint: string, options?: RequestInit) {
   }
 }
 
+// ── Helpers ───────────────────────────────────────────────────
+// Wrap scraper result to match the { success: true, ...fields } shape
+// that pages expect (same as what API routes return via ok()).
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function wrap(data: any): any {
+  if (data && typeof data === 'object' && 'success' in data) return data;
+  // Spread the object so callers access fields at top level: result.data, result.total, etc.
+  return { success: true, ...data };
+}
+
+// ── Server-side direct imports (lazy, so bundler only pulls them in
+//    when this module runs on Node — not in the browser bundle) ──
+
+/* eslint-disable @typescript-eslint/no-require-imports */
+const lazyScrapers = {
+  home           : () => require('./scrapers/homeParser'),
+  search         : () => require('./scrapers/searchParser'),
+  detail         : () => require('./scrapers/detailParser'),
+  sidebar        : () => require('./scrapers/sidebarParser'),
+  tooltip        : () => require('./scrapers/tooltipParser'),
+  manga          : () => require('./scrapers/mangaParser'),
+  manhwa         : () => require('./scrapers/manhwaParser'),
+  doujinshi      : () => require('./scrapers/doujinshiParser'),
+  listing        : () => require('./scrapers/listingParser'),
+  watch          : () => require('./scrapers/watchParser'),
+  player         : () => require('./scrapers/playerParser'),
+  series         : () => require('./scrapers/seriesParser'),
+  genre          : () => require('./scrapers/genreParser'),
+  studio         : () => require('./scrapers/studioParser'),
+  producer       : () => require('./scrapers/producerParser'),
+  listMode       : () => require('./scrapers/listModeParser'),
+  mangaDetail    : () => require('./scrapers/mangaDetailParser'),
+  mangaGenre     : () => require('./scrapers/mangaGenreParser'),
+  mangaRead      : () => require('./scrapers/mangaReadParser'),
+};
+/* eslint-enable @typescript-eslint/no-require-imports */
+
+// ── Public API ────────────────────────────────────────────────
+
 export async function getHome() {
-  return fetchAPI('/home', { next: { revalidate: 300 } });
+  const { scrapeHome } = lazyScrapers.home();
+  return wrap(await scrapeHome());
 }
 
 export async function getSearch(query: string, page = 1) {
-  return fetchAPI(`/search?q=${encodeURIComponent(query)}&page=${page}`, { next: { revalidate: 0 } });
+  const { scrapeSearch } = lazyScrapers.search();
+  return wrap(await scrapeSearch(query, page));
 }
 
 export async function getDetail(url: string) {
-  return fetchAPI(`/detail?url=${encodeURIComponent(url)}`, { next: { revalidate: 3600 } });
-}
-
-export async function getWatch(url: string) {
-  return fetchAPI(`/watch?url=${encodeURIComponent(url)}`, { next: { revalidate: 0 } });
-}
-
-export async function getManga(page = 1) {
-  return fetchAPI(`/manga?page=${page}`, { next: { revalidate: 300 } });
+  const { scrapeDetail } = lazyScrapers.detail();
+  return wrap(await scrapeDetail(url));
 }
 
 export async function getSidebar() {
-  return fetchAPI('/sidebar', { next: { revalidate: 3600 } });
+  const { scrapeSidebar } = lazyScrapers.sidebar();
+  return wrap(await scrapeSidebar());
+}
+
+export async function getWatch(url: string) {
+  const { scrapeWatch }            = lazyScrapers.watch();
+  const { extractStreamFromEmbed } = lazyScrapers.player();
+
+  const data = await scrapeWatch(url);
+
+  const streamResults = await Promise.allSettled(
+    (data.servers as { name: string; embedUrl: string }[]).map(async (s) => {
+      const stream = await extractStreamFromEmbed(s.embedUrl);
+      return { server: s.name, embedUrl: s.embedUrl, ...stream };
+    })
+  );
+
+  const streams = streamResults
+    .filter((r) => r.status === 'fulfilled')
+    .map((r) => (r as PromiseFulfilledResult<unknown>).value);
+
+  return wrap({ ...data, streams });
 }
 
 export async function getHentai(page = 1) {
-  return fetchAPI(`/hentai?page=${page}`, { next: { revalidate: 300 } });
-}
-
-export async function getSeries(params: Record<string, string | number | string[]>) {
-  const p = new URLSearchParams();
-  Object.entries(params).forEach(([key, value]) => {
-    if (Array.isArray(value)) {
-      value.forEach(v => p.append(key, v));
-    } else if (value !== '' && value !== undefined && value !== null) {
-      if (key === 'page' && Number(value) <= 1) return;
-      p.append(key, String(value));
-    }
-  });
-  return fetchAPI(`/daftar-series?${p.toString()}`);
-}
-
-export async function getSeriesFilters() {
-  return fetchAPI('/daftar-series/filters', { next: { revalidate: 86400 } });
-}
-
-export async function getListMode(title = '') {
-  const qs = title ? `?title=${encodeURIComponent(title)}` : '';
-  return fetchAPI(`/list-mode${qs}`, { next: { revalidate: 86400 } });
-}
-
-export async function getGenres() {
-  return fetchAPI('/genre', { next: { revalidate: 86400 } });
-}
-
-export async function getGenreSlug(slug: string, page = 1) {
-  return fetchAPI(`/genre/${encodeURIComponent(slug)}?page=${page}`, { next: { revalidate: 3600 } });
+  const { scrapeListing } = lazyScrapers.listing();
+  return wrap(await scrapeListing('hentai', page));
 }
 
 export async function get2D(page = 1) {
-  return fetchAPI(`/2d?page=${page}`, { next: { revalidate: 300 } });
+  const { scrapeListing } = lazyScrapers.listing();
+  return wrap(await scrapeListing('2d', page));
 }
 
 export async function getJav(page = 1) {
-  return fetchAPI(`/jav?page=${page}`, { next: { revalidate: 300 } });
+  const { scrapeListing } = lazyScrapers.listing();
+  return wrap(await scrapeListing('jav', page));
 }
 
 export async function getUncensored(page = 1) {
-  return fetchAPI(`/uncensored?page=${page}`, { next: { revalidate: 300 } });
+  const { scrapeListing } = lazyScrapers.listing();
+  return wrap(await scrapeListing('uncensored', page));
 }
 
-export async function getStudios() {
-  return fetchAPI('/studio', { next: { revalidate: 86400 } });
-}
-
-export async function getStudioSlug(slug: string, page = 1) {
-  return fetchAPI(`/studio/${encodeURIComponent(slug)}?page=${page}`, { next: { revalidate: 3600 } });
-}
-
-export async function getProducers() {
-  return fetchAPI('/producer', { next: { revalidate: 86400 } });
-}
-
-export async function getProducerSlug(slug: string, page = 1) {
-  return fetchAPI(`/producer/${encodeURIComponent(slug)}?page=${page}`, { next: { revalidate: 3600 } });
-}
-
-export async function getDoujinshi(page = 1) {
-  return fetchAPI(`/doujinshi?page=${page}`, { next: { revalidate: 300 } });
+export async function getManga(page = 1) {
+  const { scrapeManga } = lazyScrapers.manga();
+  return wrap(await scrapeManga(page));
 }
 
 export async function getManhwa(page = 1) {
-  return fetchAPI(`/manhwa?page=${page}`, { next: { revalidate: 300 } });
+  const { scrapeManhwa } = lazyScrapers.manhwa();
+  return wrap(await scrapeManhwa(page));
+}
+
+export async function getDoujinshi(page = 1) {
+  const { scrapeDoujinshi } = lazyScrapers.doujinshi();
+  return wrap(await scrapeDoujinshi(page));
+}
+
+export async function getSeries(params: Record<string, string | number | string[]>) {
+  const { scrapeSeries } = lazyScrapers.series();
+  const p = params as Parameters<typeof scrapeSeries>[0];
+  return wrap(await scrapeSeries(p));
+}
+
+export async function getSeriesFilters() {
+  const { scrapeSeriesFilters } = lazyScrapers.series();
+  return wrap(await scrapeSeriesFilters());
+}
+
+export async function getListMode(title = '') {
+  const { scrapeListMode } = lazyScrapers.listMode();
+  return wrap(await scrapeListMode(title));
+}
+
+export async function getGenres() {
+  const { scrapeGenreList } = lazyScrapers.genre();
+  return wrap(await scrapeGenreList());
+}
+
+export async function getGenreSlug(slug: string, page = 1) {
+  const { scrapeGenreAnime } = lazyScrapers.genre();
+  return wrap(await scrapeGenreAnime(slug, page));
+}
+
+export async function getStudios() {
+  const { scrapeStudioList } = lazyScrapers.studio();
+  return wrap(await scrapeStudioList());
+}
+
+export async function getStudioSlug(slug: string, page = 1) {
+  const { scrapeStudioAnime } = lazyScrapers.studio();
+  return wrap(await scrapeStudioAnime(slug, page));
+}
+
+export async function getProducers() {
+  const { scrapeProducerList } = lazyScrapers.producer();
+  return wrap(await scrapeProducerList());
+}
+
+export async function getProducerSlug(slug: string, page = 1) {
+  const { scrapeProducerAnime } = lazyScrapers.producer();
+  return wrap(await scrapeProducerAnime(slug, page));
 }
 
 export async function getMangaDetail(url: string) {
-  return fetchAPI(`/manga-detail?url=${encodeURIComponent(url)}`, { next: { revalidate: 3600 } });
+  const { scrapeMangaDetail } = lazyScrapers.mangaDetail();
+  return wrap(await scrapeMangaDetail(url));
 }
 
 export async function getMangaGenreSlug(slug: string, page = 1) {
-  return fetchAPI(`/manga-genre/${encodeURIComponent(slug)}?page=${page}`, { next: { revalidate: 3600 } });
+  const { scrapeMangaGenre } = lazyScrapers.mangaGenre();
+  return wrap(await scrapeMangaGenre(slug, page));
 }
 
 export async function getMangaRead(url: string) {
-  return fetchAPI(`/manga-read?url=${encodeURIComponent(url)}`, { next: { revalidate: 0 } });
+  const { scrapeMangaRead } = lazyScrapers.mangaRead();
+  return wrap(await scrapeMangaRead(url));
 }
