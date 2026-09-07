@@ -1,10 +1,7 @@
 const axios = require('axios');
 
-// On Vercel (serverless), keep retries low so we stay within the 10s limit.
-// LOCAL / non-Vercel: allow more retries via env vars.
-const IS_VERCEL = !!process.env.VERCEL;
-const MAX_RETRIES = parseInt(process.env.MAX_RETRIES) || (IS_VERCEL ? 1 : 3);
-const REQUEST_TIMEOUT = parseInt(process.env.REQUEST_TIMEOUT) || (IS_VERCEL ? 7000 : 15000);
+const MAX_RETRIES = parseInt(process.env.MAX_RETRIES) || 3;
+const REQUEST_TIMEOUT = parseInt(process.env.REQUEST_TIMEOUT) || 15000;
 
 const USER_AGENTS = [
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',

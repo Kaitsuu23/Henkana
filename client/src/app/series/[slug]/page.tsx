@@ -1,9 +1,6 @@
 import type { Metadata } from 'next';
 import { getDetail } from '@/lib/api';
 
-export const dynamic = 'force-dynamic';
-export const maxDuration = 30;
-
 export async function generateMetadata({
   params,
 }: {

@@ -25,7 +25,7 @@ interface HlsPlayerProps {
 }
 
 const API_BASE =
-  process.env.NEXT_PUBLIC_API_URL || "/api";
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000/api";
 
 function proxied(url: string) {
   return `${API_BASE}/proxy/hls?url=${encodeURIComponent(url)}`;

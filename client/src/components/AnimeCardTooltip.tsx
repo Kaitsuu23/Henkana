@@ -23,7 +23,7 @@ interface AnimeCardTooltipProps {
   children: React.ReactNode;
 }
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || '/api';
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api';
 
 export function AnimeCardTooltip({ postId, href, detailHref, children }: AnimeCardTooltipProps) {
   const [data, setData]       = useState<TooltipData | null>(null);
