@@ -39,7 +39,15 @@ function parseMangaType(type: string) {
   return { flagCode: null, label: type };
 }
 
-function getMangaHref(url: string) {
+function getChapterReaderUrl(chapterUrl: string) {
+  try {
+    const u = new URL(chapterUrl);
+    const ch = u.searchParams.get('chapter');
+    const slug = u.pathname.split('/')[2];
+    if (ch && slug) return `/manga/${slug}/${ch}`;
+  } catch {}
+  return chapterUrl;
+}
   try {
     const u = new URL(url, 'https://hentaicop.com');
     if (u.pathname.startsWith('/manga/')) {
@@ -118,7 +126,7 @@ export function MangaCard({ title, thumbnail, url, type, views, score, latestCha
           {latestChapters.slice(0, 2).map((ch, i) => (
             <Link
               key={i}
-              href={ch.url}
+              href={getChapterReaderUrl(ch.url)}
               className="flex items-center justify-between bg-muted px-2.5 py-1.5 text-xs font-semibold hover:bg-primary hover:text-primary-foreground transition-colors group/ch"
             >
               <span className="truncate">
