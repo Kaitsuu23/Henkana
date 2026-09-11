@@ -47,22 +47,84 @@ router.get('/hls', async (req, res, next) => {
       contentType.includes('x-mpegurl') ||
       url.includes('.m3u8')
     ) {
-      const text    = Buffer.from(r.data).toString('utf8');
+      let text    = Buffer.from(r.data).toString('utf8');
       const baseUrl = url.substring(0, url.lastIndexOf('/') + 1);
+      const proto = String(req.get('x-forwarded-proto') || req.protocol || 'https')
+        .split(',')[0].trim();
+      const host = String(req.get('x-forwarded-host') || req.get('host') || '')
+        .split(',')[0].trim();
+      const origin = host ? `${proto}://${host}` : '';
 
-      // Rewrite setiap baris yang bukan komentar dan bukan absolute URL
+      const toProxy = (abs) => {
+        const path = `/api/proxy/hls?url=${encodeURIComponent(abs)}`;
+        return origin ? `${origin}${path}` : path;
+      };
+      const resolve = (uri) => {
+        if (/^https?:\/\//i.test(uri)) return uri;
+        try { return new URL(uri, url).href; } catch { return baseUrl + uri; }
+      };
+
+      // Master playlist: keep only the highest RESOLUTION / BANDWIDTH variant
+      // so ExoPlayer tidak stuck di rendition 240p/360p lewat proxy lambat.
+      if (/#EXT-X-STREAM-INF/i.test(text)) {
+        const lines = text.split(/\r?\n/);
+        const variants = [];
+        for (let i = 0; i < lines.length; i++) {
+          const t = lines[i].trim();
+          if (!t.startsWith('#EXT-X-STREAM-INF')) continue;
+          const bw = parseInt((t.match(/BANDWIDTH=(\d+)/i) || [])[1] || '0', 10);
+          const resM = t.match(/RESOLUTION=(\d+)x(\d+)/i);
+          const pixels = resM ? Number(resM[1]) * Number(resM[2]) : 0;
+          let uri = '';
+          for (let j = i + 1; j < lines.length; j++) {
+            const n = lines[j].trim();
+            if (!n || n.startsWith('#')) continue;
+            uri = n;
+            break;
+          }
+          if (uri) variants.push({ bw, pixels, uri, inf: lines[i] });
+        }
+        if (variants.length > 1) {
+          variants.sort((a, b) => (b.pixels - a.pixels) || (b.bw - a.bw));
+          const best = variants[0];
+          const kept = [];
+          for (const line of lines) {
+            const t = line.trim();
+            if (
+              t.startsWith('#EXTM3U') ||
+              t.startsWith('#EXT-X-VERSION') ||
+              t.startsWith('#EXT-X-INDEPENDENT-SEGMENTS') ||
+              t.startsWith('#EXT-X-MEDIA:')
+            ) {
+              kept.push(line.replace(/URI="([^"]+)"/g, (_, u) => `URI="${toProxy(resolve(u))}"`));
+            }
+          }
+          if (!kept.some((l) => l.trim().startsWith('#EXTM3U'))) kept.unshift('#EXTM3U');
+          kept.push(best.inf);
+          kept.push(toProxy(resolve(best.uri)));
+          text = kept.join('\n') + '\n';
+        }
+      }
+
       const rewritten = text
         .split('\n')
         .map(line => {
           const trimmed = line.trim();
-          if (!trimmed || trimmed.startsWith('#')) return line;
-          // Absolute URL — wrap ke proxy
-          const absUrl = trimmed.startsWith('http') ? trimmed : baseUrl + trimmed;
-          return `/api/proxy/hls?url=${encodeURIComponent(absUrl)}`;
+          if (!trimmed) return line;
+          if (trimmed.startsWith('#')) {
+            return line.replace(/URI="([^"]+)"/g, (_, u) => {
+              if (String(u).includes('/api/proxy/hls')) return `URI="${u}"`;
+              return `URI="${toProxy(resolve(u))}"`;
+            });
+          }
+          if (trimmed.includes('/api/proxy/hls')) return line;
+          const absUrl = resolve(trimmed);
+          return toProxy(absUrl);
         })
         .join('\n');
 
       res.set('Content-Type', 'application/vnd.apple.mpegurl');
+      res.set('Cache-Control', 'no-store');
       return res.send(rewritten);
     }
 
