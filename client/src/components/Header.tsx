@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import { ChevronDown, Layers, Menu } from 'lucide-react';
 import {
   DropdownMenu,
@@ -23,11 +24,15 @@ export default function Header() {
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container relative mx-auto flex h-14 max-w-screen-2xl items-center justify-between gap-4 px-4">
-        {/* Logo — visible on all screen sizes now */}
+        {/* Logo — using icon image */}
         <Link href="/" className="flex shrink-0 items-center gap-2">
-          <span className="flex h-7 w-7 items-center justify-center rounded-md bg-primary text-sm font-bold text-primary-foreground">
-            H
-          </span>
+          <Image 
+            src="/apple-touch-icon.png" 
+            alt="Henkana" 
+            width={28} 
+            height={28}
+            className="rounded-md"
+          />
           <span className="hidden font-bold sm:inline-block">Henkana</span>
         </Link>
 
