@@ -3,7 +3,7 @@ import { Sidebar } from '@/components/Sidebar';
 import Link from 'next/link';
 import { NumberedPagination } from '@/components/NumberedPagination';
 
-export const revalidate = 300;
+export const dynamic = 'force-dynamic';
 
 function getMangaHref(url: string, slug?: string | null) {
   if (slug) return `/manga/${slug}`;

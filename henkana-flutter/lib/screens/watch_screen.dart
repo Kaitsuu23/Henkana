@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:provider/provider.dart';
 import '../providers/anime_provider.dart';
 import '../widgets/video_card.dart';
@@ -79,11 +78,12 @@ class _WatchScreenState extends State<WatchScreen> {
                 Positioned.fill(
                   child: Opacity(
                     opacity: 0.08,
-                    child: CachedNetworkImage(
-                      imageUrl: AppConstants.proxyImage(widget.thumbnail!),
+                    child: Image.network(
+                      AppConstants.proxyImage(widget.thumbnail!),
                       fit: BoxFit.cover,
-                      errorWidget: (_, __, ___) => const SizedBox(),
-                      placeholder: (_, __) => const SizedBox(),
+                      errorBuilder: (_, __, ___) => const SizedBox(),
+                      loadingBuilder: (_, child, progress) =>
+                          progress == null ? child : const SizedBox(),
                     ),
                   ),
                 ),
@@ -352,12 +352,12 @@ class _SeriesCard extends StatelessWidget {
             ClipRRect(
               borderRadius: BorderRadius.circular(8),
               child: thumbnail != null
-                  ? CachedNetworkImage(
-                      imageUrl: AppConstants.proxyImage(thumbnail),
+                  ? Image.network(
+                      AppConstants.proxyImage(thumbnail),
                       width: 52,
                       height: 72,
                       fit: BoxFit.cover,
-                      errorWidget: (_, __, ___) => const _ThumbFallback(),
+                      errorBuilder: (_, __, ___) => const _ThumbFallback(),
                     )
                   : const _ThumbFallback(),
             ),

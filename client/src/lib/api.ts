@@ -9,18 +9,19 @@ export async function fetchAPI(endpoint: string, options?: RequestInit) {
         'Content-Type': 'application/json',
         ...options?.headers,
       },
-      next: { revalidate: 60, ...options?.next },
+      // Selalu ambil data fresh dari API — tanpa cache.
+      cache: 'no-store',
     });
-    
+
     if (!res.ok) {
       throw new Error(`API error: ${res.status} ${res.statusText}`);
     }
-    
+
     const data = await res.json();
     if (!data.success) {
       throw new Error(data.error?.message || 'Unknown API error');
     }
-    
+
     return data;
   } catch (error) {
     console.error(`Fetch API Error [${endpoint}]:`, error);
@@ -29,31 +30,31 @@ export async function fetchAPI(endpoint: string, options?: RequestInit) {
 }
 
 export async function getHome() {
-  return fetchAPI('/home', { next: { revalidate: 300 } });
+  return fetchAPI('/home');
 }
 
 export async function getSearch(query: string, page = 1) {
-  return fetchAPI(`/search?q=${encodeURIComponent(query)}&page=${page}`, { next: { revalidate: 0 } });
+  return fetchAPI(`/search?q=${encodeURIComponent(query)}&page=${page}`);
 }
 
 export async function getDetail(url: string) {
-  return fetchAPI(`/detail?url=${encodeURIComponent(url)}`, { next: { revalidate: 3600 } });
+  return fetchAPI(`/detail?url=${encodeURIComponent(url)}`);
 }
 
 export async function getWatch(url: string) {
-  return fetchAPI(`/watch?url=${encodeURIComponent(url)}`, { next: { revalidate: 0 } });
+  return fetchAPI(`/watch?url=${encodeURIComponent(url)}`);
 }
 
 export async function getManga(page = 1) {
-  return fetchAPI(`/manga?page=${page}`, { next: { revalidate: 300 } });
+  return fetchAPI(`/manga?page=${page}`);
 }
 
 export async function getSidebar() {
-  return fetchAPI('/sidebar', { next: { revalidate: 3600 } });
+  return fetchAPI('/sidebar');
 }
 
 export async function getHentai(page = 1) {
-  return fetchAPI(`/hentai?page=${page}`, { next: { revalidate: 300 } });
+  return fetchAPI(`/hentai?page=${page}`);
 }
 
 export async function getSeries(params: Record<string, string | number | string[]>) {
@@ -70,66 +71,66 @@ export async function getSeries(params: Record<string, string | number | string[
 }
 
 export async function getSeriesFilters() {
-  return fetchAPI('/daftar-series/filters', { next: { revalidate: 86400 } });
+  return fetchAPI('/daftar-series/filters');
 }
 
 export async function getListMode(title = '') {
   const qs = title ? `?title=${encodeURIComponent(title)}` : '';
-  return fetchAPI(`/list-mode${qs}`, { next: { revalidate: 86400 } });
+  return fetchAPI(`/list-mode${qs}`);
 }
 
 export async function getGenres() {
-  return fetchAPI('/genre', { next: { revalidate: 86400 } });
+  return fetchAPI('/genre');
 }
 
 export async function getGenreSlug(slug: string, page = 1) {
-  return fetchAPI(`/genre/${encodeURIComponent(slug)}?page=${page}`, { next: { revalidate: 3600 } });
+  return fetchAPI(`/genre/${encodeURIComponent(slug)}?page=${page}`);
 }
 
 export async function get2D(page = 1) {
-  return fetchAPI(`/2d?page=${page}`, { next: { revalidate: 300 } });
+  return fetchAPI(`/2d?page=${page}`);
 }
 
 export async function getJav(page = 1) {
-  return fetchAPI(`/jav?page=${page}`, { next: { revalidate: 300 } });
+  return fetchAPI(`/jav?page=${page}`);
 }
 
 export async function getUncensored(page = 1) {
-  return fetchAPI(`/uncensored?page=${page}`, { next: { revalidate: 300 } });
+  return fetchAPI(`/uncensored?page=${page}`);
 }
 
 export async function getStudios() {
-  return fetchAPI('/studio', { next: { revalidate: 86400 } });
+  return fetchAPI('/studio');
 }
 
 export async function getStudioSlug(slug: string, page = 1) {
-  return fetchAPI(`/studio/${encodeURIComponent(slug)}?page=${page}`, { next: { revalidate: 3600 } });
+  return fetchAPI(`/studio/${encodeURIComponent(slug)}?page=${page}`);
 }
 
 export async function getProducers() {
-  return fetchAPI('/producer', { next: { revalidate: 86400 } });
+  return fetchAPI('/producer');
 }
 
 export async function getProducerSlug(slug: string, page = 1) {
-  return fetchAPI(`/producer/${encodeURIComponent(slug)}?page=${page}`, { next: { revalidate: 3600 } });
+  return fetchAPI(`/producer/${encodeURIComponent(slug)}?page=${page}`);
 }
 
 export async function getDoujinshi(page = 1) {
-  return fetchAPI(`/doujinshi?page=${page}`, { next: { revalidate: 300 } });
+  return fetchAPI(`/doujinshi?page=${page}`);
 }
 
 export async function getManhwa(page = 1) {
-  return fetchAPI(`/manhwa?page=${page}`, { next: { revalidate: 300 } });
+  return fetchAPI(`/manhwa?page=${page}`);
 }
 
 export async function getMangaDetail(url: string) {
-  return fetchAPI(`/manga-detail?url=${encodeURIComponent(url)}`, { next: { revalidate: 3600 } });
+  return fetchAPI(`/manga-detail?url=${encodeURIComponent(url)}`);
 }
 
 export async function getMangaGenreSlug(slug: string, page = 1) {
-  return fetchAPI(`/manga-genre/${encodeURIComponent(slug)}?page=${page}`, { next: { revalidate: 3600 } });
+  return fetchAPI(`/manga-genre/${encodeURIComponent(slug)}?page=${page}`);
 }
 
 export async function getMangaRead(url: string) {
-  return fetchAPI(`/manga-read?url=${encodeURIComponent(url)}`, { next: { revalidate: 0 } });
+  return fetchAPI(`/manga-read?url=${encodeURIComponent(url)}`);
 }

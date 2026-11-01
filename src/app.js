@@ -31,6 +31,9 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const CORS_ORIGIN = process.env.CORS_ORIGIN || '*';
 
+// Pretty-print JSON responses
+app.set('json spaces', 2);
+
 // ── CORS ─────────────────────────────────────────────────────
 app.use(
   cors({

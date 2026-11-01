@@ -5,7 +5,7 @@ import { Sidebar } from '@/components/Sidebar';
 import { HomeHero } from '@/components/HomeHero';
 import { RecommendationSection } from '@/components/RecommendationSection';
 
-export const revalidate = 300; // revalidate every 5 minutes
+export const dynamic = 'force-dynamic';
 
 export default async function Home() {
   const [homeData, sidebarData] = await Promise.all([

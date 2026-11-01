@@ -9,8 +9,6 @@ import { BookOpen, Star, User } from 'lucide-react';
 export const dynamic = 'force-dynamic';
 export const maxDuration = 30;
 
-export const revalidate = 3600;
-
 // ─────────────────────────────────────────────────────────────
 // Metadata
 // ─────────────────────────────────────────────────────────────

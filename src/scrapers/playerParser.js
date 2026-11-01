@@ -4,6 +4,17 @@ const cheerio = require('cheerio');
 const BASE_URL = process.env.BASE_URL || 'https://hentaicop.com';
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36';
 
+// Header browser-like. play.php menolak request tanpa header browser standar
+// (terutama Accept-Language) dengan 403 "Fake Referer / Bot Scraper terdeteksi".
+const BROWSER_HEADERS = {
+  'User-Agent'               : UA,
+  Accept                     : 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+  'Accept-Language'          : 'en-US,en;q=0.9,id;q=0.8',
+  Connection                 : 'keep-alive',
+  'Upgrade-Insecure-Requests': '1',
+  Referer                    : BASE_URL,
+};
+
 // ─────────────────────────────────────────────────────────────
 // Decode helpers
 // ─────────────────────────────────────────────────────────────
@@ -69,7 +80,7 @@ function parseSourcesFromJs(jsCode) {
 async function getEmbedUrl(episodeUrl, quality) {
   const r = await axios.get(episodeUrl, {
     timeout: 15000,
-    headers: { 'User-Agent': UA, Referer: BASE_URL },
+    headers: BROWSER_HEADERS,
     maxRedirects: 5,
   });
   const $ = cheerio.load(r.data);
@@ -117,7 +128,7 @@ async function extractStreamFromEmbed(embedUrl) {
 
   const r = await axios.get(embedUrl, {
     timeout: 15000,
-    headers: { 'User-Agent': UA, Referer: BASE_URL },
+    headers: BROWSER_HEADERS,
     maxRedirects: 5,
   });
 

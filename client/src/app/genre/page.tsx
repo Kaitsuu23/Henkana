@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { AlertTriangle } from 'lucide-react';
 import { ItemExplorer } from '@/components/ItemExplorer';
 
-export const revalidate = 86400;
+export const dynamic = 'force-dynamic';
 
 export default async function GenrePage() {
   let genreData;

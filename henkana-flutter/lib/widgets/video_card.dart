@@ -798,11 +798,11 @@ class VideoCardState extends State<VideoCard>
                   _Btn(Icons.skip_previous_rounded,
                       onTap: widget.onPrev, enabled: widget.hasPrev,
                       isFullscreen: widget.isFullscreen),
-                  SizedBox(width: widget.isFullscreen ? 8 : 4),
+                  SizedBox(width: widget.isFullscreen ? 8 : 3),
                   _Btn(
                     value.isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
                     onTap: _togglePlay, isFullscreen: widget.isFullscreen),
-                  SizedBox(width: widget.isFullscreen ? 8 : 4),
+                  SizedBox(width: widget.isFullscreen ? 8 : 3),
                   _Btn(Icons.skip_next_rounded,
                       onTap: widget.onNext, enabled: widget.hasNext,
                       isFullscreen: widget.isFullscreen),
@@ -828,6 +828,7 @@ class VideoCardState extends State<VideoCard>
       if (widget.qualities.length > 1) ...[
         _Btn(Icons.hd_outlined,
             onTap: _openQualityPicker,
+            // Only show label in fullscreen — portrait is too narrow
             label: widget.isFullscreen
                 ? widget.qualities[widget.selectedQualityIndex
                     .clamp(0, widget.qualities.length - 1)]["label"]
@@ -863,12 +864,12 @@ class VideoCardState extends State<VideoCard>
   Widget _buildError() {
     return Container(
       color: Colors.black,
-      child: Center(
+      child: const Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(Icons.error_outline, color: Colors.white54, size: 48),
-            const SizedBox(height: 16),
+            SizedBox(height: 16),
             Text('Error loading video', style: TextStyle(color: Colors.white70, fontSize: 16)),
           ],
         ),
@@ -965,18 +966,19 @@ class _Btn extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const h = 36.0;
-    const iconSize = 18.0;
+    final h = isFullscreen ? 48.0 : 34.0;
+    final iconSize = isFullscreen ? 26.0 : 17.0;
+    final hPad = isFullscreen ? 14.0 : 7.0;
 
     return GestureDetector(
       onTap: enabled ? onTap : null,
       child: Container(
         height: h,
-        padding: const EdgeInsets.symmetric(horizontal: 8),
-        constraints: const BoxConstraints(minWidth: h),
+        padding: EdgeInsets.symmetric(horizontal: hPad),
+        constraints: BoxConstraints(minWidth: h),
         decoration: BoxDecoration(
           color: Colors.black.withValues(alpha: enabled ? 0.55 : 0.3),
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(isFullscreen ? 12 : 7),
           border: Border.all(color: Colors.white.withValues(alpha: enabled ? 0.15 : 0.05)),
         ),
         child: Row(mainAxisSize: MainAxisSize.min, mainAxisAlignment: MainAxisAlignment.center,

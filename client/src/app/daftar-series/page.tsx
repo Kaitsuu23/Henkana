@@ -11,8 +11,6 @@ import { Suspense } from 'react';
 export const dynamic = 'force-dynamic';
 export const maxDuration = 30;
 
-export const revalidate = 300;
-
 export default async function DaftarSeriesPage({
   searchParams,
 }: {

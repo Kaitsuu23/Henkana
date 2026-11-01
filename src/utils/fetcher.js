@@ -43,7 +43,6 @@ async function fetchHTML(url, retries = MAX_RETRIES) {
         'Accept-Encoding': 'gzip, deflate, br',
         Connection: 'keep-alive',
         'Upgrade-Insecure-Requests': '1',
-        'Cache-Control': 'max-age=0',
         Referer: process.env.BASE_URL || 'https://hentaicop.com',
       },
       maxRedirects: 5,

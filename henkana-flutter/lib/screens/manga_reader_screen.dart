@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:provider/provider.dart';
 import '../providers/manga_provider.dart';
 import '../widgets/shimmer_widgets.dart';
@@ -140,21 +139,23 @@ class _PageImage extends StatelessWidget {
     return Stack(
       alignment: Alignment.bottomRight,
       children: [
-        CachedNetworkImage(
-          imageUrl: AppConstants.proxyImage(url),
+        Image.network(
+          AppConstants.proxyImage(url),
           width: double.infinity,
           fit: BoxFit.fitWidth,
-          placeholder: (_, __) => SizedBox(
-            height: MediaQuery.of(context).size.height * 0.6,
-            child: Center(
-              child: ShimmerBox(
-                width: MediaQuery.of(context).size.width,
-                height: MediaQuery.of(context).size.height * 0.6,
-                borderRadius: 0,
-              ),
-            ),
-          ),
-          errorWidget: (_, __, ___) => Container(
+          loadingBuilder: (_, child, progress) => progress == null
+              ? child
+              : SizedBox(
+                  height: MediaQuery.of(context).size.height * 0.6,
+                  child: Center(
+                    child: ShimmerBox(
+                      width: MediaQuery.of(context).size.width,
+                      height: MediaQuery.of(context).size.height * 0.6,
+                      borderRadius: 0,
+                    ),
+                  ),
+                ),
+          errorBuilder: (_, __, ___) => Container(
             height: 200,
             color: const Color(AppConstants.cardColor),
             child: const Center(

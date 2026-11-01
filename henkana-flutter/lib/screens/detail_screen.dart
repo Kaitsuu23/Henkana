@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:provider/provider.dart';
 import '../providers/anime_provider.dart';
 import '../models/detail_data.dart';
@@ -149,12 +148,13 @@ class _DetailBodyState extends State<_DetailBody> {
           fit: StackFit.expand,
           children: [
             if (data.thumbnail != null)
-              CachedNetworkImage(
-                imageUrl: AppConstants.proxyImage(data.thumbnail!),
+              Image.network(
+                AppConstants.proxyImage(data.thumbnail!),
                 fit: BoxFit.cover,
-                placeholder: (_, __) =>
-                    Container(color: const Color(AppConstants.cardColor)),
-                errorWidget: (_, __, ___) =>
+                loadingBuilder: (_, child, progress) => progress == null
+                    ? child
+                    : Container(color: const Color(AppConstants.cardColor)),
+                errorBuilder: (_, __, ___) =>
                     Container(color: const Color(AppConstants.cardColor)),
               ),
             // gradient

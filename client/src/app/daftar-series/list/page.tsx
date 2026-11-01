@@ -15,8 +15,6 @@ import { Grid2X2, List } from 'lucide-react';
 export const dynamic = 'force-dynamic';
 export const maxDuration = 30;
 
-export const revalidate = 86400; // cache 24 jam
-
 const LETTERS = ['[', '#', ...Array.from({ length: 26 }, (_, i) => String.fromCharCode(65 + i))];
 
 export default async function ListModePage({

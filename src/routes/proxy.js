@@ -179,7 +179,7 @@ router.get('/image', async (req, res, next) => {
 
     const contentType = r.headers['content-type'] || 'image/jpeg';
     res.set('Content-Type', contentType);
-    res.set('Cache-Control', 'public, max-age=86400'); // cache 24 jam
+    res.set('Cache-Control', 'no-store');
     res.set('Access-Control-Allow-Origin', '*');
     return res.send(r.data);
 

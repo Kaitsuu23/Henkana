@@ -41,7 +41,7 @@ Widget _routedAnimeCard(
   
   // Get series URL from episode URL by removing the episode part
   // Following the same logic as the frontend: strip "-episode-N" suffix
-  String _getSeriesUrl(String url) {
+  String getSeriesUrl(String url) {
     // Remove trailing slash if present
     final cleanUrl = url.replaceAll(RegExp(r'/?$'), '');
     
@@ -56,7 +56,7 @@ Widget _routedAnimeCard(
     return url;
   }
   
-  final seriesUrl = _getSeriesUrl(item.url);
+  final seriesUrl = getSeriesUrl(item.url);
   
   return AnimeCard(
     item: item,

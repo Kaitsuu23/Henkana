@@ -15,8 +15,6 @@ dependencies:
   provider: ^6.1.2
   # Video player
   video_player: ^2.8.6
-  # Image
-  cached_network_image: ^3.3.1
   # Utils
   shimmer: ^3.0.0
   pull_to_refresh: ^2.0.0

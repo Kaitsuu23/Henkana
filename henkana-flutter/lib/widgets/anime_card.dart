@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import '../models/anime_item.dart';
 import '../utils/constants.dart';
 
@@ -89,11 +88,13 @@ class _AnimeImage extends StatelessWidget {
       fit: StackFit.expand,
       children: [
         // Thumbnail — sharp corners (radius 0)
-        CachedNetworkImage(
-          imageUrl: AppConstants.proxyImage(item.thumbnail ?? ''),
+        Image.network(
+          AppConstants.proxyImage(item.thumbnail ?? ''),
           fit: BoxFit.cover,
-          placeholder: (_, __) => Container(color: const Color(AppConstants.mutedColor)),
-          errorWidget: (_, __, ___) => Container(
+          loadingBuilder: (_, child, progress) => progress == null
+              ? child
+              : Container(color: const Color(AppConstants.mutedColor)),
+          errorBuilder: (_, __, ___) => Container(
             color: const Color(AppConstants.mutedColor),
             child: const Icon(Icons.image_not_supported_outlined,
                 color: Color(AppConstants.textMuted), size: 22),
@@ -332,12 +333,13 @@ class AnimeListTile extends StatelessWidget {
             // Thumbnail — sharp
             SizedBox(
               width: 80, height: 110,
-              child: CachedNetworkImage(
-                imageUrl: AppConstants.proxyImage(item.thumbnail ?? ''),
+              child: Image.network(
+                AppConstants.proxyImage(item.thumbnail ?? ''),
                 fit: BoxFit.cover,
-                placeholder: (_, __) =>
-                    Container(color: const Color(AppConstants.mutedColor)),
-                errorWidget: (_, __, ___) => Container(
+                loadingBuilder: (_, child, progress) => progress == null
+                    ? child
+                    : Container(color: const Color(AppConstants.mutedColor)),
+                errorBuilder: (_, __, ___) => Container(
                   color: const Color(AppConstants.mutedColor),
                   child: const Icon(Icons.image_not_supported_outlined,
                       color: Color(AppConstants.textMuted), size: 20),
