@@ -1,6 +1,5 @@
 package com.henkana
 
-import android.os.Build
 import android.os.Bundle
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
@@ -11,17 +10,26 @@ class MainActivity : FlutterActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Request to draw behind system bars
+        // Draw behind system bars (edge-to-edge)
         WindowCompat.setDecorFitsSystemWindows(window, false)
+        hideNavigationBar()
+    }
 
-        // Configure window insets controller
-        val windowInsetsController = WindowCompat.getInsetsController(window, window.decorView)
-        windowInsetsController?.let { controller ->
-            // Hide the navigation bars (gesture bar)
-            controller.hide(WindowInsetsCompat.Type.navigationBars())
+    // Android mengembalikan navigation bar setelah di-swipe atau saat app
+    // kembali dari background. Terapkan ulang tiap window kembali fokus.
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+        if (hasFocus) hideNavigationBar()
+    }
 
-            // Set behavior: show transiently on swipe, then auto-hide
-            controller.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
-        }
+    private fun hideNavigationBar() {
+        val controller = WindowCompat.getInsetsController(window, window.decorView)
+
+        // Hanya navigation bar yang disembunyikan — status bar tetap tampil.
+        controller.hide(WindowInsetsCompat.Type.navigationBars())
+
+        // Muncul sementara saat di-swipe dari tepi, lalu auto-hide sendiri.
+        controller.systemBarsBehavior =
+            WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
     }
 }

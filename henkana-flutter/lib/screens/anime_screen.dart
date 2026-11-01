@@ -1,18 +1,31 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/anime_provider.dart';
+import '../providers/latest_provider.dart';
+import '../models/anime_item.dart';
 import '../widgets/anime_card.dart';
 import '../widgets/shimmer_widgets.dart';
 import '../widgets/app_error_widget.dart';
 import '../widgets/pill_tab_bar.dart';
 import '../utils/constants.dart';
 import 'detail_screen.dart';
+import 'watch_screen.dart';
 
-// Card dimensions used consistently across all grids
-const double _kCardHeight = 210.0; // thumbnail + title area
+const double _kCardHeight = 210.0;
 const double _kGridPadding = 12.0;
 const double _kGridSpacing = 10.0;
 const int _kGridColumns = 3;
+
+// URL routing — episode path → WatchScreen, series path → DetailScreen
+enum _UrlType { episode, series }
+
+_UrlType _urlType(String url) {
+  try {
+    final path = Uri.parse(url).path;
+    if (path.startsWith('/series/')) return _UrlType.series;
+  } catch (_) {}
+  return _UrlType.episode;
+}
 
 class AnimeScreen extends StatefulWidget {
   const AnimeScreen({super.key});
@@ -25,23 +38,33 @@ class _AnimeScreenState extends State<AnimeScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabCtrl;
 
-  // Doujinshi is manga — removed from here
   final List<String> _tabs = ['Hentai', 'Uncensored', 'JAV'];
-  final List<String> _endpoints = ['hentai', 'uncensored', 'jav'];
-  final List<AnimeListProvider> _providers = [];
+
+  // Hentai (index 0) uses LatestProvider with type=hentai
+  // Uncensored + JAV use AnimeListProvider
+  late final LatestProvider _hentaiProvider;
+  final List<AnimeListProvider> _otherProviders = [];
 
   @override
   void initState() {
     super.initState();
     _tabCtrl = TabController(length: _tabs.length, vsync: this);
-    for (final ep in _endpoints) {
-      _providers.add(AnimeListProvider(endpoint: ep));
+
+    _hentaiProvider = LatestProvider(type: 'hentai');
+    _hentaiProvider.fetch();
+
+    for (final ep in ['uncensored', 'jav']) {
+      _otherProviders.add(AnimeListProvider(endpoint: ep));
     }
-    _providers[0].fetch();
+
     _tabCtrl.addListener(() {
       if (!_tabCtrl.indexIsChanging) {
-        final p = _providers[_tabCtrl.index];
-        if (p.state == LoadState.idle) p.fetch();
+        if (_tabCtrl.index == 0) {
+          if (_hentaiProvider.state == LoadState.idle) _hentaiProvider.fetch();
+        } else {
+          final p = _otherProviders[_tabCtrl.index - 1];
+          if (p.state == LoadState.idle) p.fetch();
+        }
       }
     });
   }
@@ -49,7 +72,8 @@ class _AnimeScreenState extends State<AnimeScreen>
   @override
   void dispose() {
     _tabCtrl.dispose();
-    for (final p in _providers) {
+    _hentaiProvider.dispose();
+    for (final p in _otherProviders) {
       p.dispose();
     }
     super.dispose();
@@ -69,28 +93,39 @@ class _AnimeScreenState extends State<AnimeScreen>
       ),
       body: TabBarView(
         controller: _tabCtrl,
-        children: List.generate(
-          _tabs.length,
-          (i) => ChangeNotifierProvider.value(
-            value: _providers[i],
-            child: const _AnimeTabBody(),
+        children: [
+          // Tab 0 — Hentai via daftar-series?order=update&type=hentai
+          ChangeNotifierProvider.value(
+            value: _hentaiProvider,
+            child: const _LatestTabBody(),
           ),
-        ),
+          // Tab 1, 2 — Uncensored, JAV via /api/uncensored, /api/jav
+          ...List.generate(
+            _otherProviders.length,
+            (i) => ChangeNotifierProvider.value(
+              value: _otherProviders[i],
+              child: const _AnimeTabBody(),
+            ),
+          ),
+        ],
       ),
     );
   }
 }
 
-class _AnimeTabBody extends StatefulWidget {
-  const _AnimeTabBody();
+// ─── Hentai tab body (uses LatestProvider) ────────────────────────────────────
+
+class _LatestTabBody extends StatefulWidget {
+  const _LatestTabBody();
+
   @override
-  State<_AnimeTabBody> createState() => _AnimeTabBodyState();
+  State<_LatestTabBody> createState() => _LatestTabBodyState();
 }
 
-class _AnimeTabBodyState extends State<_AnimeTabBody>
-    {
+class _LatestTabBodyState extends State<_LatestTabBody> {
   final ScrollController _scroll = ScrollController();
-@override
+
+  @override
   void initState() {
     super.initState();
     _scroll.addListener(_onScroll);
@@ -98,7 +133,7 @@ class _AnimeTabBodyState extends State<_AnimeTabBody>
 
   void _onScroll() {
     if (_scroll.position.pixels >= _scroll.position.maxScrollExtent - 300) {
-      context.read<AnimeListProvider>().loadMore();
+      context.read<LatestProvider>().loadMore();
     }
   }
 
@@ -110,7 +145,7 @@ class _AnimeTabBodyState extends State<_AnimeTabBody>
 
   @override
   Widget build(BuildContext context) {
-return Consumer<AnimeListProvider>(
+    return Consumer<LatestProvider>(
       builder: (_, prov, __) {
         if (prov.isLoading && prov.items.isEmpty) {
           return const GridShimmer();
@@ -133,7 +168,6 @@ return Consumer<AnimeListProvider>(
               crossAxisCount: _kGridColumns,
               mainAxisSpacing: _kGridSpacing,
               crossAxisSpacing: _kGridSpacing,
-              // fixed height per cell — all cards same size regardless of screen
               mainAxisExtent: _kCardHeight,
             ),
             itemCount: prov.items.length + (prov.isLoading ? 3 : 0),
@@ -142,7 +176,103 @@ return Consumer<AnimeListProvider>(
                 return const ShimmerBox(
                   width: double.infinity,
                   height: _kCardHeight,
-                  borderRadius: 10,
+                  borderRadius: 0,
+                );
+              }
+              final item = prov.items[i];
+              return _AnimatedCard(
+                index: i,
+                child: AnimeCard(
+                  item: item,
+                  onTap: () => _navigate(context, item),
+                ),
+              );
+            },
+          ),
+        );
+      },
+    );
+  }
+
+  void _navigate(BuildContext context, AnimeItem item) {
+    switch (_urlType(item.url)) {
+      case _UrlType.series:
+        Navigator.push(context,
+            _fadeRoute(DetailScreen(url: item.url, title: item.title)));
+      case _UrlType.episode:
+        Navigator.push(context,
+            _fadeRoute(WatchScreen(
+                url: item.url,
+                title: item.title,
+                thumbnail: item.thumbnail)));
+    }
+  }
+}
+
+// ─── Other tab body (uses AnimeListProvider) ─────────────────────────────────
+
+class _AnimeTabBody extends StatefulWidget {
+  const _AnimeTabBody();
+
+  @override
+  State<_AnimeTabBody> createState() => _AnimeTabBodyState();
+}
+
+class _AnimeTabBodyState extends State<_AnimeTabBody> {
+  final ScrollController _scroll = ScrollController();
+
+  @override
+  void initState() {
+    super.initState();
+    _scroll.addListener(_onScroll);
+  }
+
+  void _onScroll() {
+    if (_scroll.position.pixels >= _scroll.position.maxScrollExtent - 300) {
+      context.read<AnimeListProvider>().loadMore();
+    }
+  }
+
+  @override
+  void dispose() {
+    _scroll.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Consumer<AnimeListProvider>(
+      builder: (_, prov, __) {
+        if (prov.isLoading && prov.items.isEmpty) {
+          return const GridShimmer();
+        }
+        if (prov.hasError && prov.items.isEmpty) {
+          return AppErrorWidget(
+            message: prov.errorMessage,
+            onRetry: prov.refresh,
+          );
+        }
+        return RefreshIndicator(
+          color: const Color(AppConstants.primaryColor),
+          backgroundColor: const Color(AppConstants.surfaceColor),
+          onRefresh: prov.refresh,
+          child: GridView.builder(
+            controller: _scroll,
+            padding: const EdgeInsets.all(_kGridPadding),
+            physics: const AlwaysScrollableScrollPhysics(),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: _kGridColumns,
+              mainAxisSpacing: _kGridSpacing,
+              crossAxisSpacing: _kGridSpacing,
+              mainAxisExtent: _kCardHeight,
+            ),
+            itemCount: prov.items.length + (prov.isLoading ? 3 : 0),
+            itemBuilder: (_, i) {
+              if (i >= prov.items.length) {
+                return const ShimmerBox(
+                  width: double.infinity,
+                  height: _kCardHeight,
+                  borderRadius: 0,
                 );
               }
               final item = prov.items[i];
@@ -164,7 +294,7 @@ return Consumer<AnimeListProvider>(
   }
 }
 
-// ─── shared animated card wrapper ────────────────────────────────────────────
+// ─── Animated card wrapper ────────────────────────────────────────────────────
 
 class _AnimatedCard extends StatefulWidget {
   final int index;

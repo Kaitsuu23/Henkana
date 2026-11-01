@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../providers/manga_provider.dart';
 import '../widgets/shimmer_widgets.dart';
@@ -30,17 +29,13 @@ class _MangaReaderScreenState extends State<MangaReaderScreen> {
   @override
   void dispose() {
     _prov.dispose();
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     super.dispose();
   }
 
+  // Toggle hanya untuk AppBar & bottom bar internal — system UI (nav bar)
+  // diatur native di MainActivity, jadi tidak disentuh dari sini.
   void _toggleBars() {
     setState(() => _showBars = !_showBars);
-    if (_showBars) {
-      SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
-    } else {
-      SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
-    }
   }
 
   @override
