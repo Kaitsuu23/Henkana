@@ -71,6 +71,7 @@ export default async function Home() {
               'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5';
 
             const isBaru = typeof section.section === 'string' && section.section.toLowerCase().includes('baru');
+            const isHentai = section.type === 'anime' && typeof section.section === 'string' && section.section.toLowerCase().includes('hentai');
 
             return (
               <section key={idx} className="space-y-4 relative group/section">
@@ -81,6 +82,11 @@ export default async function Home() {
                   </h2>
                   {isBaru && (
                     <Link href="/terbaru" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1">
+                      Lihat Semua <span aria-hidden>→</span>
+                    </Link>
+                  )}
+                  {isHentai && (
+                    <Link href="/terbaru?type=hentai" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1">
                       Lihat Semua <span aria-hidden>→</span>
                     </Link>
                   )}

@@ -11,22 +11,25 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 export const metadata: Metadata = { title: 'Baru Ditambahkan' };
 
-function pageHref(p: number) {
-  if (p <= 1) return '/terbaru';
-  return `/terbaru/page/${p}/`;
+function pageHref(p: number, type?: string) {
+  const base = p <= 1 ? '/terbaru' : `/terbaru/page/${p}/`;
+  return type ? `${base}?type=${encodeURIComponent(type)}` : base;
 }
 
 export default async function TerbaruPageN({
   params,
+  searchParams,
 }: {
   params: Promise<{ page: string }>;
+  searchParams: Promise<{ type?: string }>;
 }) {
   const { page: pageStr } = await params;
+  const { type } = await searchParams;
   const page = Number(pageStr) || 1;
 
   let terbaruData;
   try {
-    terbaruData = await getTerbaru(page);
+    terbaruData = await getTerbaru(page, type);
   } catch {
     terbaruData = null;
   }
@@ -49,8 +52,8 @@ export default async function TerbaruPageN({
         <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary" />
         <div className="container mx-auto max-w-6xl px-4 py-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div className="space-y-1">
-            <span className="text-xs text-muted-foreground uppercase tracking-widest">Terbaru</span>
-            <h1 className="text-3xl font-extrabold md:text-4xl tracking-tight">Baru Ditambahkan</h1>
+            <span className="text-xs text-muted-foreground uppercase tracking-widest">{type === 'hentai' ? 'Hentai' : 'Terbaru'}</span>
+            <h1 className="text-3xl font-extrabold md:text-4xl tracking-tight">{type === 'hentai' ? 'Hentai' : 'Baru Ditambahkan'}</h1>
           </div>
           {total && (
             <span className="inline-flex w-fit items-center rounded-full border border-border/60 bg-background px-4 py-1.5 text-sm font-medium text-muted-foreground shrink-0">
@@ -71,7 +74,7 @@ export default async function TerbaruPageN({
 
             {totalPages && totalPages > 1 ? (
               <div className="flex items-center justify-center gap-1.5 pt-4">
-                <PageArrow href={pageHref(page - 1)} isDisabled={!hasPrevPage} label="Previous">
+                <PageArrow href={pageHref(page - 1, type)} isDisabled={!hasPrevPage} label="Previous">
                   <ChevronLeft className="h-4 w-4" />
                 </PageArrow>
                 {getPageRange(page, totalPages).map((p, i) =>
@@ -80,7 +83,7 @@ export default async function TerbaruPageN({
                   ) : (
                     <Link
                       key={p}
-                      href={pageHref(p as number)}
+                      href={pageHref(p as number, type)}
                       aria-current={p === page ? 'page' : undefined}
                       className={cn(
                         'flex h-9 min-w-9 items-center justify-center rounded-md px-2 text-sm font-medium transition-colors',
@@ -89,17 +92,17 @@ export default async function TerbaruPageN({
                     >{p}</Link>
                   )
                 )}
-                <PageArrow href={pageHref(page + 1)} isDisabled={!hasNextPage} label="Next">
+                <PageArrow href={pageHref(page + 1, type)} isDisabled={!hasNextPage} label="Next">
                   <ChevronRight className="h-4 w-4" />
                 </PageArrow>
               </div>
             ) : (hasPrevPage || hasNextPage) ? (
               <div className="flex items-center justify-center gap-1.5 pt-4">
-                <PageArrow href={pageHref(page - 1)} isDisabled={!hasPrevPage} label="Previous">
+                <PageArrow href={pageHref(page - 1, type)} isDisabled={!hasPrevPage} label="Previous">
                   <ChevronLeft className="h-4 w-4" />
                 </PageArrow>
                 <span className="px-3 text-sm text-muted-foreground">Halaman {page}</span>
-                <PageArrow href={pageHref(page + 1)} isDisabled={!hasNextPage} label="Next">
+                <PageArrow href={pageHref(page + 1, type)} isDisabled={!hasNextPage} label="Next">
                   <ChevronRight className="h-4 w-4" />
                 </PageArrow>
               </div>
