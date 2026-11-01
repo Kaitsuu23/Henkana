@@ -57,6 +57,10 @@ export async function getHentai(page = 1) {
   return fetchAPI(`/hentai?page=${page}`);
 }
 
+export async function getTerbaru(page = 1) {
+  return fetchAPI(`/daftar-series?order=update&page=${page}`);
+}
+
 export async function getSeries(params: Record<string, string | number | string[]>) {
   const p = new URLSearchParams();
   Object.entries(params).forEach(([key, value]) => {

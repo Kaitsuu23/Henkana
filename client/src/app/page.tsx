@@ -4,6 +4,7 @@ import { MangaCard } from '@/components/MangaCard';
 import { Sidebar } from '@/components/Sidebar';
 import { HomeHero } from '@/components/HomeHero';
 import { RecommendationSection } from '@/components/RecommendationSection';
+import Link from 'next/link';
 
 export const dynamic = 'force-dynamic';
 
@@ -69,6 +70,8 @@ export default async function Home() {
               count === 4 ? 'grid-cols-2 sm:grid-cols-4' :
               'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5';
 
+            const isBaru = typeof section.section === 'string' && section.section.toLowerCase().includes('baru');
+
             return (
               <section key={idx} className="space-y-4 relative group/section">
                 <div className="flex items-center justify-between">
@@ -76,6 +79,11 @@ export default async function Home() {
                     <span className="w-1.5 h-6 bg-primary rounded-full"></span>
                     {section.section}
                   </h2>
+                  {isBaru && (
+                    <Link href="/terbaru" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1">
+                      Lihat Semua <span aria-hidden>→</span>
+                    </Link>
+                  )}
                 </div>
                 <div className={`grid ${gridCols} gap-4`}>
                   {(section.data || []).map((item: any, i: number) => (
