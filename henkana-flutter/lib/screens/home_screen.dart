@@ -435,9 +435,13 @@ class _SectionWidgetState extends State<_SectionWidget>
           _SectionHeader(
             title: widget.section.title,
             onSeeAll: widget.section.title.contains('Baru')
-                ? () => Navigator.push(
-                    context, _fadeRoute(const LatestScreen()))
-                : null,
+              ? () => Navigator.push(
+                  context, _fadeRoute(const LatestScreen()))
+              : widget.section.title.toLowerCase().contains('hentai')
+                  ? () => Navigator.push(
+                      context,
+                      _fadeRoute(const LatestScreen(type: 'hentai', title: 'Hentai')))
+                  : null,
           ),
           if (widget.section.type == 'anime-tabs') _buildTabSection(),
           if (widget.section.type == 'anime') _buildAnimeRow(widget.section.animeItems),

@@ -6,6 +6,9 @@ import 'anime_provider.dart'; // re-use LoadState
 // ─── Latest (order=update) list provider ─────────────────────────────────────
 
 class LatestProvider extends ChangeNotifier {
+  final String? type;
+  LatestProvider({this.type});
+
   final ApiService _api = ApiService();
 
   LoadState _state = LoadState.idle;
@@ -40,6 +43,7 @@ class LatestProvider extends ChangeNotifier {
       final json = await _api.fetchDaftarSeries(
         page: _currentPage,
         order: 'update',
+        type: type,
       );
 
       final newItems =

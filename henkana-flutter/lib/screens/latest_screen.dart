@@ -88,7 +88,9 @@ Widget _routedAnimeCard(AnimeItem item, BuildContext context) {
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
 class LatestScreen extends StatefulWidget {
-  const LatestScreen({super.key});
+  final String? type;
+  final String? title;
+  const LatestScreen({super.key, this.type, this.title});
 
   @override
   State<LatestScreen> createState() => _LatestScreenState();
@@ -101,7 +103,7 @@ class _LatestScreenState extends State<LatestScreen> {
   @override
   void initState() {
     super.initState();
-    _provider = LatestProvider();
+    _provider = LatestProvider(type: widget.type);
     _provider.fetch();
     _scroll.addListener(_onScroll);
   }
@@ -126,9 +128,9 @@ class _LatestScreenState extends State<LatestScreen> {
       backgroundColor: const Color(AppConstants.bgColor),
       appBar: AppBar(
         backgroundColor: const Color(AppConstants.bgColor),
-        title: const Text(
-          'Terbaru',
-          style: TextStyle(
+        title: Text(
+          widget.title ?? 'Terbaru',
+          style: const TextStyle(
             fontFamily: AppConstants.fontFamily,
             color: Color(AppConstants.textPrimary),
             fontWeight: FontWeight.w700,
