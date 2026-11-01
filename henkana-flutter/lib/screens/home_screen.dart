@@ -14,6 +14,7 @@ import 'detail_screen.dart';
 import 'watch_screen.dart';
 import 'manga_detail_screen.dart';
 import 'manga_reader_screen.dart';
+import 'latest_screen.dart';
 
 // ─── URL routing helper (mirrors Next.js getSlugFromUrl) ─────────────────────
 //
@@ -433,6 +434,10 @@ class _SectionWidgetState extends State<_SectionWidget>
         children: [
           _SectionHeader(
             title: widget.section.title,
+            onSeeAll: widget.section.title.contains('Baru')
+                ? () => Navigator.push(
+                    context, _fadeRoute(const LatestScreen()))
+                : null,
           ),
           if (widget.section.type == 'anime-tabs') _buildTabSection(),
           if (widget.section.type == 'anime') _buildAnimeRow(widget.section.animeItems),
@@ -551,7 +556,8 @@ class _SectionWidgetState extends State<_SectionWidget>
 
 class _SectionHeader extends StatelessWidget {
   final String title;
-  const _SectionHeader({required this.title});
+  final VoidCallback? onSeeAll;
+  const _SectionHeader({required this.title, this.onSeeAll});
 
   @override
   Widget build(BuildContext context) {
@@ -570,15 +576,41 @@ class _SectionHeader extends StatelessWidget {
           ),
           const SizedBox(width: 10),
           // text-xl font-bold
-          Text(
-            title,
-            style: const TextStyle(
-              fontFamily: AppConstants.fontFamily,
-              color: Color(AppConstants.textPrimary),
-              fontSize: 18,
-              fontWeight: FontWeight.w700,
+          Expanded(
+            child: Text(
+              title,
+              style: const TextStyle(
+                fontFamily: AppConstants.fontFamily,
+                color: Color(AppConstants.textPrimary),
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+              ),
             ),
           ),
+          if (onSeeAll != null)
+            GestureDetector(
+              onTap: onSeeAll,
+              child: const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Lihat Semua',
+                    style: TextStyle(
+                      fontFamily: AppConstants.fontFamily,
+                      color: Color(AppConstants.textSecondary),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  SizedBox(width: 2),
+                  Icon(
+                    Icons.chevron_right_rounded,
+                    size: 16,
+                    color: Color(AppConstants.textSecondary),
+                  ),
+                ],
+              ),
+            ),
         ],
       ),
     );
